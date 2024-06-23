@@ -1,6 +1,6 @@
 #=
 User have to implement
-- A struct that inherit AbstractEventHandler
+- A mutable struct that inherit AbstractEventHandler. Note Structure must be mutable!!
 - An eventexec function
 =#
 """
@@ -23,13 +23,29 @@ function _eventexec(
     eventexec(event)
     return SCIP_OKAY
 end
+
+"""
+[EXPERIMENTAL]
+A wrapper for SCIPincludeEventhdlrBasic. Eventdata is not yet supported. Cannot be called when SCIP is in problem creation stage
+
+# Required Parameters
+- scip::Ptr{SCIP_} pointer to scip
+- eventhdlrs::Dict{Any, Ptr{SCIP_Eventhdlr}} Dictionary of eventhandlers from the SCIPData object
+- event_handler::EVENTHDLR the actual eventhandler structure that is a subclass of AbstractEventHandler
+
+# Optional Parameters
+- name::String name of the event handler
+- desc::String description of the event handler
+"""
 function include_event_handler(
     scip::Ptr{SCIP_},
     eventhdlrs::Dict{Any,Ptr{SCIP_Eventhdlr}},
     event_handler::EVENTHDLR;
-    name = "",
-    desc = ""
+    name::String = "",
+    desc::String = ""
     ) where {EVENTHDLR <: AbstractEventHandler}
+
+    @assert SCIPgetStage(scip) == SCIP.LibSCIP.SCIP_STAGE_PROBLEM
     _eventexec = @cfunction(
         _eventexec,
         SCIP_RETCODE,
@@ -40,6 +56,7 @@ function include_event_handler(
             Ptr{SCIP_EventData}
         )
     )
+
     c_handler = Ref{Ptr{SCIP_Eventhdlr}}(C_NULL)
     event_handler_data = pointer_from_objref(event_handler)
 
@@ -60,5 +77,5 @@ function include_event_handler(
 
     #Persist in scip store against GC
     eventhdlrs[event_handler] = c_handler[]
-
+    
 end

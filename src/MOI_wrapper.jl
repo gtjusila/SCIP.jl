@@ -375,6 +375,8 @@ function set_start_values(o::Optimizer)
 end
 
 function MOI.optimize!(o::Optimizer)
+    println("Hello World")
+    println(SCIPgetSubscipsOff(o.inner))
     set_start_values(o)
     if o.objective_sense == MOI.FEASIBILITY_SENSE
         MOI.set(
@@ -383,6 +385,8 @@ function MOI.optimize!(o::Optimizer)
             MOI.ScalarAffineFunction{Float64}([], 0.0),
         )
     end
+    println("Hello World")
+    println(SCIPgetSubscipsOff(o.inner))
     @SCIP_CALL SCIPsolve(o)
     return nothing
 end
